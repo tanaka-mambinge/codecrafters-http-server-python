@@ -9,7 +9,7 @@ def main():
     soc, add = server_socket.accept()
 
     # Respond to the client with http 200 OK response
-    res = soc.send(b"HTTP/1.1 200 OK\n\n")
+    res = soc.send(b"HTTP/1.1 200 OK\r\n\r\n")
     print(f"Response: {res}")
 
 
