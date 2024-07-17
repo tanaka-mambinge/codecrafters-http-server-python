@@ -1,15 +1,16 @@
-# Uncomment this to pass the first stage
 import socket
 
 
 def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
 
-    # Uncomment this to pass the first stage
-    #
+    # Create a server socket
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
-    server_socket.accept()  # wait for client
+    soc, add = server_socket.accept()
+
+    # Respond to the client with http 200 OK response
+    res = soc.send(b"HTTP/1.1 200 OK")
+    print(f"Response: {res}")
 
 
 if __name__ == "__main__":
