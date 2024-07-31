@@ -60,16 +60,17 @@ def api_echo(**kwargs):
     url = kwargs.get("url")
     headers = kwargs.get("headers")
     message = url.split("/echo/")[-1]
+    response_body = build_body(message, headers)
     response_headers = {
         "Content-Type": "text/plain",
-        "Content-Length": str(len(message)),
+        "Content-Length": str(len(response_body)),
     }
 
     return (
         b"HTTP/1.1 200 OK\r\n"
         + build_header_str(response_headers, headers).encode()
         + b"\r\n"
-        + build_body(message, headers)
+        + response_body
     )
 
 
