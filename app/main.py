@@ -1,24 +1,23 @@
 import socket
 
 
-def api_root(soc: socket.socket, url: str):
-    res = soc.send(b"HTTP/1.1 200 OK\r\n\r\n")
-    print(f"Response: {res}")
+def api_root(url: str):
+    return b"HTTP/1.1 200 OK\r\n\r\n"
 
 
-def api_not_found(soc: socket.socket, url: str):
-    res = soc.send(b"HTTP/1.1 404 Not Found\r\n\r\n")
-    print(f"Response: {res}")
+def api_not_found(url: str):
+    return b"HTTP/1.1 404 Not Found\r\n\r\n"
 
 
-def api_echo(soc: socket.socket, url: str):
+def api_echo(url: str):
     # Extract the message from the url
     message = url.split("/echo/")[-1]
-    status_line = "HTTP/1.1 200 OK\r\n"
-    headers = f"Content-Type: text/plain\r\nContent-Length: {len(message)}\r\n\r\n"
-
-    res = soc.send(f"{status_line}{headers}{message}".encode())
-    print(f"Response: {res}")
+    return (
+        b"HTTP/1.1 200 OK\r\n\Content-Type: text/plain\r\nContent-Length: "
+        + str(len(message)).encode()
+        + b"\r\n\r\n"
+        + message.encode()
+    )
 
 
 def generate_static_paths(paths: dict):
@@ -55,7 +54,8 @@ def main():
 
     for static_path, original_path in static_paths:
         if path.startswith(static_path):
-            registered_paths[original_path](soc, path)
+            response = registered_paths[original_path](path)
+            soc.send(response)
             path_found = True
             break
 
