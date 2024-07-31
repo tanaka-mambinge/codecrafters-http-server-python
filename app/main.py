@@ -49,7 +49,7 @@ def api_files(**kwargs):
 
     if os.path.exists(os.path.join(base_dir, file_name)):
         with open(os.path.join(base_dir, file_name), "wb") as f:
-            file_size_bytes = os.path.getsize(f.name)
+            file_size_bytes = os.path.getsize(os.path.join(base_dir, file_name))
 
             return (
                 b"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
