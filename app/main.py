@@ -58,7 +58,8 @@ def api_files(**kwargs):
             return (
                 b"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
                 + str(file_size_bytes).encode()
-                + b"\r\n\r\nHello, World!"
+                + b"\r\n\r\n"
+                + file_content
             )
 
     return b"HTTP/1.1 404 Not Found\r\n\r\n"
