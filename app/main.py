@@ -21,10 +21,12 @@ def build_header_str(custom_headers: dict, request_headers: dict) -> str:
     return header_str
 
 
-def extract_headers(data: str) -> dict:
-    headers = data.strip().split("\r\n")[1:]
+def extract_headers(header_str: str) -> dict:
+    headers = header_str.split("\r\n")[1:-2]
     headers_dict = {}
+
     for header in headers:
+        print("header: ", header)
         if header:
             key, value = header.split(": ")
             headers_dict[key] = value
