@@ -22,15 +22,15 @@ def api_echo(soc: socket.socket, url: str):
 
 
 def generate_static_paths(paths: dict):
-    paths = []
+    static_paths = []
 
     for path in paths.keys():
         if "/*" in path:
-            paths.append((path.replace("/*", ""), path))
+            static_paths.append((path.replace("/*", ""), path))
         else:
-            paths.append((path, path))
+            static_paths.append((path, path))
 
-    return paths
+    return static_paths
 
 
 def main():
