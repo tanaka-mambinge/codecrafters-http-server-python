@@ -4,6 +4,33 @@ import socket
 import threading
 
 
+def build_header_str(custom_headers: dict, request_headers: dict) -> str:
+    header_str = ""
+    supported_encoding = ["gzip"]
+
+    for key, value in custom_headers.items():
+        header_str += f"{key}: {value}\r\n"
+
+    accept_encoding = request_headers.get("Accept-Encoding", None)
+
+    if accept_encoding:
+        for encoding in supported_encoding:
+            if accept_encoding == encoding:
+                header_str += f"Content-Encoding: {encoding}\r\n"
+
+    return header_str
+
+
+def extract_headers(data: str) -> dict:
+    headers = data.strip().split("\r\n")[1:]
+    headers_dict = {}
+    for header in headers:
+        if header:
+            key, value = header.split(": ")
+            headers_dict[key] = value
+    return headers_dict
+
+
 def api_root(**kwargs):
     return b"HTTP/1.1 200 OK\r\n\r\n"
 
@@ -15,11 +42,17 @@ def api_not_found(**kwargs):
 def api_echo(**kwargs):
     # Extract the message from the url
     url = kwargs.get("url")
+    headers = kwargs.get("headers")
     message = url.split("/echo/")[-1]
+    response_headers = {
+        "Content-Type": "text/plain",
+        "Content-Length": str(len(message)),
+    }
+
     return (
-        b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
-        + str(len(message)).encode()
-        + b"\r\n\r\n"
+        b"HTTP/1.1 200 OK\r\n"
+        + build_header_str(response_headers, headers).encode()
+        + b"\r\n"
         + message.encode()
     )
 
@@ -27,18 +60,23 @@ def api_echo(**kwargs):
 def api_user_agent(**kwargs):
     # Extract the user agent from the headers
     headers = kwargs.get("headers")
-    user_agent = None
-    for header in headers:
-        if "User-Agent" in header:
-            user_agent = header.split(": ")[1]
-            break
+    user_agent = headers.get("User-Agent", None)
 
-    return (
-        b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
-        + str(len(user_agent)).encode()
-        + b"\r\n\r\n"
-        + user_agent.encode()
-    )
+    if user_agent:
+        response_headers = {
+            "Content-Type": "text/plain",
+            "Content-Length": str(len(user_agent)),
+        }
+
+        return (
+            b"HTTP/1.1 200 OK\r\n"
+            + build_header_str(response_headers, headers).encode()
+            + b"\r\n"
+            + user_agent.encode()
+        )
+
+    else:
+        return b"HTTP/1.1 400 Bad Request\r\n\r\n"
 
 
 def api_files(**kwargs):
@@ -46,6 +84,7 @@ def api_files(**kwargs):
     url = kwargs.get("url")
     method = kwargs.get("method")
     body = kwargs.get("body")
+    headers = kwargs.get("headers")
 
     if method == "GET":
         base_dir = args.directory
@@ -58,10 +97,15 @@ def api_files(**kwargs):
                 file_size_bytes = file_stats.st_size
                 file_content = file.read()
 
+                response_headers = {
+                    "Content-Type": "application/octet-stream",
+                    "Content-Length": str(file_size_bytes),
+                }
+
                 return (
-                    b"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
-                    + str(file_size_bytes).encode()
-                    + b"\r\n\r\n"
+                    b"HTTP/1.1 200 OK\r\n"
+                    + build_header_str(response_headers, headers).encode()
+                    + b"\r\n"
                     + file_content
                 )
 
@@ -99,7 +143,7 @@ def handle_request(soc: socket.socket, args):
     data = soc.recv(1024)
     path = data.decode().split()[1]
     method = data.decode().split()[0]
-    headers = data.decode().split("\r\n")
+    headers = extract_headers(data.decode())
     body = data.decode().split("\r\n\r\n")[-1] if "\r\n\r\n" in data.decode() else None
 
     # Check if the path is registered
@@ -109,6 +153,7 @@ def handle_request(soc: socket.socket, args):
         "/user-agent": api_user_agent,
         "/": api_root,
     }
+
     static_paths = generate_static_paths(registered_paths)
     path_found = False
 
