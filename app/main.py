@@ -43,6 +43,7 @@ def api_user_agent(**kwargs):
 
 def api_files(**kwargs):
     args = kwargs.get("args")
+    print("Args: ", args)
     url = kwargs.get("url")
     base_dir = args.get("directory")
     file_name = url.split("/files/")[-1]
@@ -75,17 +76,12 @@ def generate_static_paths(paths: dict):
 def handle_request(server_socket: socket.socket, args: argparse.Namespace):
     soc, addr = server_socket.accept()
 
-    # Respond to the client with http 200 OK response
-    # res = soc.send(b"HTTP/1.1 200 OK\r\n\r\n")
-    # print(f"Response: {res}")
-
     # Extract url path from the request
     data = soc.recv(1024)
     path = data.decode().split()[1]
 
     # Extract headers from the request
     headers = data.decode().split("\r\n")
-    print(headers)
 
     # Check if the path is registered
     registered_paths = {
@@ -135,6 +131,7 @@ def main():
     # Parse args
     parse = argparse.ArgumentParser()
     # parse.add_argument("--port", type=int)
+    parse.add_argument("--directory", type=str, help="Directory to serve files from")
     args = parse.parse_args()
 
     # Handle multiple requests using threads
