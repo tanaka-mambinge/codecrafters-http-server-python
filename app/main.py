@@ -1,4 +1,5 @@
 import socket
+import threading
 
 
 def api_root(**kwargs):
@@ -50,12 +51,8 @@ def generate_static_paths(paths: dict):
     return static_paths
 
 
-def main():
-    print("Logs from your program will appear here!")
-
-    # Create a server socket
-    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
-    soc, add = server_socket.accept()
+def handle_request(server_socket: socket.socket):
+    soc, addr = server_socket.accept()
 
     # Respond to the client with http 200 OK response
     # res = soc.send(b"HTTP/1.1 200 OK\r\n\r\n")
@@ -104,6 +101,18 @@ def main():
 
     # Close the socket
     soc.close()
+
+
+def main():
+    print("Logs from your program will appear here!")
+
+    # Create a server socket
+    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
+
+    # Handle multiple requests using threads
+    while True:
+        thread = threading.Thread(target=handle_request, args=(server_socket,))
+        thread.start()
 
 
 if __name__ == "__main__":
