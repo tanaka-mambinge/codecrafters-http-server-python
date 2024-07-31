@@ -13,7 +13,7 @@ def api_echo(url: str):
     # Extract the message from the url
     message = url.split("/echo/")[-1]
     return (
-        b"HTTP/1.1 200 OK\r\n\Content-Type: text/plain\r\nContent-Length: "
+        b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
         + str(len(message)).encode()
         + b"\r\n\r\n"
         + message.encode()
