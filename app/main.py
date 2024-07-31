@@ -15,9 +15,9 @@ def api_echo(soc: socket.socket, url: str):
     # Extract the message from the url
     message = url.split("/echo/")[-1]
     status_line = "HTTP/1.1 200 OK\r\n"
-    headers = f"Content-Type: text/plain\r\nContent-Length: {len(message)}\r\n"
+    headers = f"Content-Type: text/plain\r\nContent-Length: {len(message)}\r\n\r\n"
 
-    res = soc.send(f"{status_line}{headers}\r\n{message}".encode())
+    res = soc.send(f"{status_line}{headers}{message}".encode())
     print(f"Response: {res}")
 
 
