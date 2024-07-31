@@ -75,7 +75,8 @@ def main():
             break
 
     if not path_found:
-        api_not_found(path)
+        response = api_not_found(path)
+        soc.send(response)
 
     # Close the socket
     soc.close()
