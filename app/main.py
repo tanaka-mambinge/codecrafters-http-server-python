@@ -48,7 +48,10 @@ def main():
     path = data.decode().split()[1]
 
     # Check if the path is registered
-    registered_paths = {"/": api_root, "/echo/*": api_echo}
+    registered_paths = {
+        "/echo/*": api_echo,
+        "/": api_root,
+    }
     static_paths = generate_static_paths(registered_paths)
     path_found = False
 
