@@ -44,25 +44,42 @@ def api_user_agent(**kwargs):
 def api_files(**kwargs):
     args = kwargs.get("args")
     url = kwargs.get("url")
-    base_dir = args.directory
-    file_name = url.split("/files/")[-1]
+    method = kwargs.get("method")
+    body = kwargs.get("body")
 
-    if os.path.exists(os.path.join(base_dir, file_name)):
-        # open file in read only mode
-        with open(os.path.join(base_dir, file_name), "rb") as file:
-            file_stats = os.stat(os.path.join(base_dir, file_name))
-            file_size_bytes = file_stats.st_size
-            file_content = file.read()
-            print(file_size_bytes, file_content)
+    if method == "GET":
+        base_dir = args.directory
+        file_name = url.split("/files/")[-1]
 
-            return (
-                b"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
-                + str(file_size_bytes).encode()
-                + b"\r\n\r\n"
-                + file_content
-            )
+        if os.path.exists(os.path.join(base_dir, file_name)):
+            # open file in read only mode
+            with open(os.path.join(base_dir, file_name), "rb") as file:
+                file_stats = os.stat(os.path.join(base_dir, file_name))
+                file_size_bytes = file_stats.st_size
+                file_content = file.read()
 
-    return b"HTTP/1.1 404 Not Found\r\n\r\n"
+                return (
+                    b"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
+                    + str(file_size_bytes).encode()
+                    + b"\r\n\r\n"
+                    + file_content
+                )
+
+        return b"HTTP/1.1 404 Not Found\r\n\r\n"
+
+    if method == "POST":
+        base_dir = args.directory
+        file_name = url.split("/files/")[-1]
+
+        # check if body is empty
+        if not body:
+            return b"HTTP/1.1 400 Bad Request\r\n\r\n"
+
+        # save body as file
+        with open(os.path.join(base_dir, file_name), "wb") as file:
+            file.write(body.encode())
+
+        return b"HTTP/1.1 201 Created\r\n\r\n"
 
 
 def generate_static_paths(paths: dict):
@@ -81,9 +98,9 @@ def handle_request(soc: socket.socket, args):
     # Extract url path from the request
     data = soc.recv(1024)
     path = data.decode().split()[1]
-
-    # Extract headers from the request
+    method = data.decode().split()[0]
     headers = data.decode().split("\r\n")
+    body = data.decode().split("\r\n\r\n")[-1] if "\r\n\r\n" in data.decode() else None
 
     # Check if the path is registered
     registered_paths = {
@@ -99,6 +116,8 @@ def handle_request(soc: socket.socket, args):
         "url": path,
         "headers": headers,
         "args": args,
+        "method": method,
+        "body": body,
     }
 
     for static_path, original_path in static_paths:
