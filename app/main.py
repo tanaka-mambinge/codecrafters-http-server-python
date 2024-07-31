@@ -1,4 +1,5 @@
 import argparse
+import gzip
 import os
 import socket
 import threading
@@ -20,6 +21,19 @@ def build_header_str(custom_headers: dict, request_headers: dict) -> str:
                 break
 
     return header_str
+
+
+def build_body(body: str, request_headers: dict) -> bytes:
+    supported_encoding = ["gzip"]
+    accept_encodings = request_headers.get("Accept-Encoding", None)
+
+    if accept_encodings is not None:
+        for accept_encoding in accept_encodings.split(","):
+            if accept_encoding.strip() in supported_encoding:
+                body_compressed = gzip.compress(body.encode())
+                return body_compressed
+
+    return body.encode()
 
 
 def extract_headers(header_str: str) -> dict:
@@ -55,7 +69,7 @@ def api_echo(**kwargs):
         b"HTTP/1.1 200 OK\r\n"
         + build_header_str(response_headers, headers).encode()
         + b"\r\n"
-        + message.encode()
+        + build_body(message, headers)
     )
 
 
