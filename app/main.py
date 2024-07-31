@@ -66,7 +66,7 @@ def main():
             break
 
         # handle wildcard match
-        if path.startswith(static_path):
+        if path.startswith(static_path) and "/*" in original_path:
             response = registered_paths[original_path](path)
             soc.send(response)
             path_found = True
