@@ -1,3 +1,5 @@
+import argparse
+import os
 import socket
 import threading
 
@@ -39,6 +41,25 @@ def api_user_agent(**kwargs):
     )
 
 
+def api_files(**kwargs):
+    args = kwargs.get("args")
+    url = kwargs.get("url")
+    base_dir = args.get("directory")
+    file_name = url.split("/files/")[-1]
+
+    if os.path.exists(os.path.join(base_dir, file_name)):
+        with open(os.path.join(base_dir, file_name), "wb") as f:
+            file_size_bytes = os.path.getsize(f.name)
+
+            return (
+                b"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
+                + str(file_size_bytes).encode()
+                + b"\r\n\r\nHello, World!"
+            )
+
+    return b"HTTP/1.1 404 Not Found\r\n\r\n"
+
+
 def generate_static_paths(paths: dict):
     static_paths = []
 
@@ -51,7 +72,7 @@ def generate_static_paths(paths: dict):
     return static_paths
 
 
-def handle_request(server_socket: socket.socket):
+def handle_request(server_socket: socket.socket, args: argparse.Namespace):
     soc, addr = server_socket.accept()
 
     # Respond to the client with http 200 OK response
@@ -69,8 +90,9 @@ def handle_request(server_socket: socket.socket):
     # Check if the path is registered
     registered_paths = {
         "/echo/*": api_echo,
-        "/": api_root,
+        "/files/*": api_files,
         "/user-agent": api_user_agent,
+        "/": api_root,
     }
     static_paths = generate_static_paths(registered_paths)
     path_found = False
@@ -78,6 +100,7 @@ def handle_request(server_socket: socket.socket):
     payload = {
         "url": path,
         "headers": headers,
+        "args": args,
     }
 
     for static_path, original_path in static_paths:
@@ -109,9 +132,14 @@ def main():
     # Create a server socket
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
 
+    # Parse args
+    parse = argparse.ArgumentParser()
+    # parse.add_argument("--port", type=int)
+    args = parse.parse_args()
+
     # Handle multiple requests using threads
     while True:
-        thread = threading.Thread(target=handle_request, args=(server_socket,))
+        thread = threading.Thread(target=handle_request, args=(server_socket, args))
         thread.start()
 
 
