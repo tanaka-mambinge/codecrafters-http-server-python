@@ -11,12 +11,13 @@ def build_header_str(custom_headers: dict, request_headers: dict) -> str:
     for key, value in custom_headers.items():
         header_str += f"{key}: {value}\r\n"
 
-    accept_encoding = request_headers.get("Accept-Encoding", None)
+    accept_encodings = request_headers.get("Accept-Encoding", None)
 
-    if accept_encoding:
-        for encoding in supported_encoding:
-            if accept_encoding == encoding:
-                header_str += f"Content-Encoding: {encoding}\r\n"
+    if accept_encodings:
+        for accept_encoding in accept_encodings.split(","):
+            if accept_encoding in supported_encoding:
+                header_str += f"Content-Encoding: {accept_encoding}\r\n"
+                break
 
     return header_str
 
@@ -26,7 +27,6 @@ def extract_headers(header_str: str) -> dict:
     headers_dict = {}
 
     for header in headers:
-        print("header: ", header)
         if header:
             key, value = header.split(": ")
             headers_dict[key] = value
