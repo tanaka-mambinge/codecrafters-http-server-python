@@ -43,9 +43,8 @@ def api_user_agent(**kwargs):
 
 def api_files(**kwargs):
     args = kwargs.get("args")
-    print("Args: ", args)
     url = kwargs.get("url")
-    base_dir = args.get("directory")
+    base_dir = args.directory
     file_name = url.split("/files/")[-1]
 
     if os.path.exists(os.path.join(base_dir, file_name)):
