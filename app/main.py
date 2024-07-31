@@ -56,10 +56,22 @@ def main():
     path_found = False
 
     for static_path, original_path in static_paths:
+        # handle exact match
+        if path == static_path:
+            response = registered_paths[original_path](path)
+            soc.send(response)
+            path_found = True
+
+            print(static_path, original_path, path)
+            break
+
+        # handle wildcard match
         if path.startswith(static_path):
             response = registered_paths[original_path](path)
             soc.send(response)
             path_found = True
+
+            print(static_path, original_path, path)
             break
 
     if not path_found:
