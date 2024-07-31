@@ -13,9 +13,9 @@ def build_header_str(custom_headers: dict, request_headers: dict) -> str:
 
     accept_encodings = request_headers.get("Accept-Encoding", None)
 
-    if accept_encodings:
+    if accept_encodings is not None:
         for accept_encoding in accept_encodings.split(","):
-            if accept_encoding in supported_encoding:
+            if accept_encoding.strip() in supported_encoding:
                 header_str += f"Content-Encoding: {accept_encoding}\r\n"
                 break
 
