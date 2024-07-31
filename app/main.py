@@ -1,22 +1,40 @@
 import socket
 
 
-def api_root(url: str):
+def api_root(**kwargs):
     return b"HTTP/1.1 200 OK\r\n\r\n"
 
 
-def api_not_found(url: str):
+def api_not_found(**kwargs):
     return b"HTTP/1.1 404 Not Found\r\n\r\n"
 
 
-def api_echo(url: str):
+def api_echo(**kwargs):
     # Extract the message from the url
+    url = kwargs.get("url")
     message = url.split("/echo/")[-1]
     return (
         b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
         + str(len(message)).encode()
         + b"\r\n\r\n"
         + message.encode()
+    )
+
+
+def api_user_agent(**kwargs):
+    # Extract the user agent from the headers
+    headers = kwargs.get("headers")
+    user_agent = None
+    for header in headers:
+        if "User-Agent" in header:
+            user_agent = header.split(": ")[1]
+            break
+
+    return (
+        b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+        + str(len(user_agent)).encode()
+        + b"\r\n\r\n"
+        + user_agent.encode()
     )
 
 
@@ -47,35 +65,41 @@ def main():
     data = soc.recv(1024)
     path = data.decode().split()[1]
 
+    # Extract headers from the request
+    headers = data.decode().split("\r\n")
+    print(headers)
+
     # Check if the path is registered
     registered_paths = {
         "/echo/*": api_echo,
         "/": api_root,
+        "/user-agent": api_user_agent,
     }
     static_paths = generate_static_paths(registered_paths)
     path_found = False
 
+    payload = {
+        "url": path,
+        "headers": headers,
+    }
+
     for static_path, original_path in static_paths:
         # handle exact match
         if path == static_path:
-            response = registered_paths[original_path](path)
+            response = registered_paths[original_path](**payload)
             soc.send(response)
             path_found = True
-
-            print(static_path, original_path, path)
             break
 
         # handle wildcard match
         if path.startswith(static_path) and "/*" in original_path:
-            response = registered_paths[original_path](path)
+            response = registered_paths[original_path](**payload)
             soc.send(response)
             path_found = True
-
-            print(static_path, original_path, path)
             break
 
     if not path_found:
-        response = api_not_found(path)
+        response = api_not_found(**payload)
         soc.send(response)
 
     # Close the socket
