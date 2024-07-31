@@ -48,8 +48,12 @@ def api_files(**kwargs):
     file_name = url.split("/files/")[-1]
 
     if os.path.exists(os.path.join(base_dir, file_name)):
-        with open(os.path.join(base_dir, file_name), "wb") as f:
-            file_size_bytes = os.path.getsize(os.path.join(base_dir, file_name))
+        # open file in read only mode
+        with open(os.path.join(base_dir, file_name), "rb") as file:
+            file_stats = os.stat(os.path.join(base_dir, file_name))
+            file_size_bytes = file_stats.st_size
+            file_content = file.read()
+            print(file_size_bytes, file_content)
 
             return (
                 b"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: "
@@ -72,9 +76,7 @@ def generate_static_paths(paths: dict):
     return static_paths
 
 
-def handle_request(server_socket: socket.socket, args: argparse.Namespace):
-    soc, addr = server_socket.accept()
-
+def handle_request(soc: socket.socket, args):
     # Extract url path from the request
     data = soc.recv(1024)
     path = data.decode().split()[1]
@@ -135,7 +137,12 @@ def main():
 
     # Handle multiple requests using threads
     while True:
-        thread = threading.Thread(target=handle_request, args=(server_socket, args))
+        # Accept a connection
+        soc, addr = server_socket.accept()
+        print(f"Connection from {addr} has been established!")
+
+        # Handle the request in a separate thread
+        thread = threading.Thread(target=handle_request, args=(soc, args))
         thread.start()
 
 
